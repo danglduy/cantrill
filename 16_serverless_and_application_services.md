@@ -147,3 +147,236 @@ An execution context is the environment where a lambda function runs in
 - EventBridge can have additional busses
 - Can create rules, match incoming rules => deliver events to a target
 - Scheduled rule: match certain date/time or range of date/time
+
+# Demo Lambda function <= Rewatch
+
+# Serverless Architecture <= Rewatch
+
+- Not a single thing, but an architecture
+- Software architecture, not hardware architecture
+- Manage few servers -> low overhead
+- Applications are a a collection of small & specialized functions
+- Stateless and Ephermal environments - billing based on duration
+- Event drive => consumption only when being used
+- FaaS (Lambda) is used where possible
+- Managed servcies are used where possible
+
+# Simple Notification Service (SNS)
+
+- Public AWS Service
+- Coordinates the sending and delivery of messages
+- Messages <= 256kb
+- SNS Topics are base entity of SNS
+- Publisher sends messages to TOPIC
+- Topics have subscribers which receive messages:
+  - HTTP, Email, SQS, Mobile push, SMS messages, Lambda
+  - By default subscribers receive all messages. Can apply filter
+  - Fan out (???)
+- SNS used across AWS for notifications - CloudWatch & CloudFormation
+- Delivery status (including HTTP, Lambda, SQS)
+- Delivery retries - reliable delivery
+- HA and scalable (region)
+- Server Side Encryption (SSE)
+- Cross-Account via Topic policy (Like s3 resource policy)
+
+# AWS Step functions
+
+Address limitations of lambda
+
+- Small functions, 15-minute execution timeout
+- Can be chained together, but messy at scale
+
+## State machines
+
+- Workflow: Start -> states -> end
+- States are things which occur
+- Maximum duration: 1 year
+- Modes: standard & express workflows
+- Can be started via services (lambda, api gateway...)
+- Can be exported/imported templates
+- IAM Roles is used for permissions
+
+## States
+
+- Succeed & Fail states
+- Wait state: wait for a time, or until date/time
+- Choice: Take different path based on input
+- Parallel: parallel branches. A choice might create multiple sets of things at the same time
+- Map: Accepts lists of thing
+- Task: A single unit of work to perform action (Lambda, Batch,...)
+
+# API Gateway
+
+- Create and manage APIs
+- Acts as endpoint/entrypoint for applications
+- Sits between applications & integrations
+  - Authorize, validate, transform request
+  - Transform, prepare, return
+- Highly available, scalable, handles authorizations, throttling, caching, cors, transformations, openapi spec, direct integration
+- Can connect to services/endpoints in AWS or on-premises
+- HTTP / REST / WebSocket APIs
+- CloudWatch store, manage full stage request and response logs
+- API Cache reduce number of calls made to backend integrations and improve client performance
+
+## Endpoint types
+
+- Edge-optimized
+  - routed to the nearest cloudfront pop
+- Regional
+  - clients in the same region
+- Private
+  - Endpoint accessible only within a VPC via interface endpoint
+
+## Stages
+
+- APIs are deployed to stages, each stage one deployment
+  - http://api.domain.com/prod => v1
+  - http://api.domain.com/dev => v2
+- Can be enabled for canary
+  - https://docs.aws.amazon.com/apigateway/latest/developerguide/canary-release.html
+
+# Advanced Demo - Build a serverless app
+
+## Purpose
+
+> The application will load from an S3 bucket and run in browser .. communicating with Lambda and Step functions via an API Gateway Endpoint. Using the application you will be able to configure reminders for 'pet cuddles' to be send using email and SMS.
+
+## Tech
+
+- SES: Sandbox mode - emails must be whitelisted to get received
+- Create Lambda execution role & Lambda function
+- State machine assume permission, invoke lambda function
+
+# Simple Queue Service (SQS)
+
+- Public, fully managed, high-available message queues
+  - Standard / FIFO
+    - Standard: Multi-lane highway
+      - At least once delivery
+      - Can scaling (by adding lanes)
+    - FIFO: Single single-load road
+      - Exactly once delivery
+      - Limited performance: 3000 messages per second with batching, or 300 messages per second without batching
+  - FIFO maintain order
+  - Billed based on 'requests'
+    - 1 request can contain 1-10 messages, up to 64KB total
+    - More requests -> more costs
+    - Short (immediate) vs Long (waitTimeSeconds) polling
+    - Should use long polling. Short polling -> many requests, each request can even contains 0 messages
+  - Encryption at rest and in-transit
+  - Identity policy / queue policy
+- Messages up to 256KB in size - link to large data
+- Received messages are removed from queue (VisiblityTimeout), then put back to the queue if no response (retry by another client, failure case => ensure fault tolerence) or are explicitly deleted from the queue
+- Dead-Letter queues can be used for problem messages
+- Great for scaling: Auto scaling groups can scale based on the length of the queue, Lambdas can be invoked when messages appear on a queue
+- SNS & SQS Fanout
+  - Normal: when a video is uploaded, a message is pushed to the queue. Worker pool ASGs will get queue and process the video, resize into different sizes and put into the result bucket
+  - Fanout: When a video is uploaded, a message is pushed to a SNS topic. Independent queues handling different sizes resizing are subscribers of the SNS topic. Each resizer for each size are independent queues, with independent scaling abilities
+
+# SQS Standard vs FIFO
+
+- FIFO: Single Lane Highway, 300 transactions/s
+
+  - Normal: 1 message/transaction
+  - High throughput mode: Batch, 10 messages/transaction
+  - Guarantee order
+  - Have to have .fifo suffix (?) to be a valid FIFO queue
+
+- Standard: Multi Lane Highway
+  - Scalable
+  - Best efforts to maintain order
+  - A message can be delivered more than once
+
+# SQS Delay Queues
+
+- Normal: A message is added to the queue and displayed immediately in the queue (SendMesage). When a consumer receives a message (ReceiveMessage), the message is hidden from the queue. After some seconds (Visibility Timeout), the message is reappeared automatically or explicitly deleted (DeleteMessage) => Allows for re-processing if there are any errors. Timeout setting: 0 seconds -> 12 hours, set on queue or per-message
+
+- Delay: When a message is sent to the queue, the message is hidden in the queue automatically => ReceiveMessage got not results. The message is appeared on the queue after some seconds (DelaySeconds). Setting: 0 seconds -> 15 minutes, on queue. Per-message invisibility can be set to override the queue setting, but not supported on FIFO queues.
+
+# SQS Dead-Letter Queues
+
+- Handle problematic messages
+- Each time a message re-appears on the queue after VisibilityTimeout, the message's ReceiveCount increments by 1.
+- redrive policy: Specify the source Queue, the Dead-Letter Queue and conditions that will move messages to the dead letter queue (maxReceiveCount)
+- When ReceiveCount > maxReceiveCount & messages are not explicitly deleted, messages are moved to the Dead-Letter queue
+- Note: Retention policy: Original enqueue time is not adjusted the moving the message to the Dead-Letter Queue. Example: 2-day retention, 1 day already on the source queue => the message is deleted from the Dead-Letter queue after 1 day.
+
+# Amazon Kinesis Data Streams < Rewatch
+
+- Stream
+- Data collected from producers, consumers get data
+- Default: 24-hour window. Up to 365 days
+- Shard architecture
+- When scaling, new shards are added
+- Shard capacity: 1MB/second ingestion, 2MBs/second consumption
+- Kinesis Data Record: 1MB
+
+## vs SQS
+
+- Ingestion data: Kinesis
+- SQS not persistent
+- Huge scale ingestion
+- Multiple consumers, rolling window
+- Data ingestion, analytics, monitoring, app clicks...
+
+# Amazon Kinesis Data Firehose
+
+- Deliver data from Kinesis to destinations (e.g. s3, http splunk, redline, elasticsearch) to keep data from being removed after a time
+- Scales automatically, region resilient
+- Near-real time delivery (~ 60 seconds)
+- Transform data using Lambda
+- Billing - volume through firehose
+- Firehose can receive data directly from producers
+
+# Kinesis Data Analytics < rewatch
+
+- Real time processing of data
+- Using SQL
+- Ingest from Kinesis Data Streams or Firehose
+
+# Kinesis Video Streams
+
+- Ingestive live video data from producers
+- Security Cameras, smartphones...
+- Consumders can access data frame-by-frame, or as needed
+- Can persist and encrypt data
+- Can't access directly via storage, only via APIs
+- Integrates with other AWS services e.g. Reokognition and Connect
+
+# Amazon Cognito
+
+- Authentication, authorization, user management for web/mobile apps
+- User pools - sign-in and get a json web token (JWT)
+  - User directory management and profiles, sign-up, sign-in, MFA...
+  - Social sign-in (facebook...)
+- Identity Pools - Allow user to access temporary AWS credentials
+  - Unauthenticated identities - guest users
+  - Swap external identities - Google, Facebook, Twitter & User Pool for short term AWS credentials to access AWS resources
+  - Assumes IAM role defined in Identity Pool and returns AWS credentials to access AWS Services
+
+# AWS Glue
+
+- Serverless ETL
+- Move and transform data
+- Crawls data sources and generate data catalog
+- Sources: s3, rds, jdbc compatible & dynamodb
+- Streams: Kinesis Data Stream & Apache kafka
+- Targets: S3, RDS, JDBC Databases
+
+## Data Catalog
+
+- Persistent metadata
+- One catalog per region per account
+
+# Amazon MQ
+
+- Combination of SQS and SNS
+- Apache ActiveMQ
+- Open standards: JMS, AMQP, MQTT, OpenWire and STOMP
+- Provides queues and topics
+- VPC based, not public like SQS, SNS
+- No AWS native integration (logging, permissions, service integration...)
+
+# Amazon AppFlow
+
+- Transfer data between Software-as-a-Service (SaaS) applications like Salesforce, SAP, Zendesk, Slack, and ServiceNow, and AWS services like Amazon S3 and Amazon Redshift, in just a few clicks.
