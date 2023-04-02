@@ -68,7 +68,7 @@
 
 # AWS Transit Gateway (TGW)
 
-- Network TRansit Hub to Connect VPCs to on premises networks
+- Network Transit Hub to Connect VPCs to on premises networks
 - Reduce network complexity
 - HA and scalable, single network object
 - Attachments to other networks
@@ -91,3 +91,59 @@
 - Supports multiple route tables allowing complex network topology
 
 # Storage Gateway - Volume
+
+- Acts as a bridge between on-premises storage and AWS
+- Presents storage using iSCSI, NFS or SMB
+- Integrates with EBS, S3 or and Glacier within AWS
+- Usage: Migrations, extensions, DR and Replacement of backups systems
+
+## Volume Stored
+
+## Volume Cached
+
+# Storage Gateway - Tape
+
+# Storage Gateway - File
+
+- Bridges on-premises file storage and S3
+- Mount Points (shares) available via NFS or SMB
+- Map directly onto an S3 bucket
+- Files stored into a mount point, are visibles as objects in an S3 bucket
+- Read and Write Caching ensure LAN-like performance
+
+# Snowball / Edge / Snowmobile
+
+# Directory Service
+
+3 modes
+
+- Simple AD - An implementation of Samba 4 (compatibility with basics AD functions)
+- AWS Managed Microsoft AD - An actual Microsoft AD DS Implementation
+- AD Connector which proxies requests back to an on-premises directory.
+
+# DataSync
+
+- Orchestrate the movement of large scale data (amounts or files) from on-premises NAS/SAN into AWS or vice-versa
+
+# FSx for Windows Servers
+
+- FSx for Windows Servers provides a native windows file system as a service which can be used within AWS, or from on-premises environments via VPN or Direct Connect
+- FSx is an advanced shared file system accessible over SMB, and integrates with Active Directory (either managed, or self-hosted).
+- It provides advanced features such as VSS, Data de-duplication, backups, encryption at rest and forced encryption in transit.
+
+# FSx for Lustre
+
+- FSx for Lustre is a managed file system which uses the FSx product designed for high performance computing
+- It delivers extreme performance for scenarios such as Big Data, Machine Learning and Financial Modeling
+
+# AWS Transfer Family
+
+- AWS Transfer Family is a secure transfer service that enables you to transfer files into and out of AWS storage services.
+- AWS Transfer Family supports transferring data from or to the following AWS storage services.
+  - Amazon Simple Storage Service (Amazon S3) storage.
+  - Amazon Elastic File System (Amazon EFS) Network File System (NFS) file systems.
+- AWS Transfer Family supports transferring data over the following protocols:
+  - Secure Shell (SSH) File Transfer Protocol (SFTP)
+  - File Transfer Protocol Secure (FTPS)
+  - File Transfer Protocol (FTP)
+  - Applicability Statement 2 (AS2)
