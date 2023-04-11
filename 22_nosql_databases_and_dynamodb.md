@@ -179,3 +179,16 @@
 
 - Petabyte-scale Data warehouse
 - Column database
+- Redshift Spectrum: direct query s3
+- Federated query: direct query other DBs
+- Server based (not serverless)
+- Run in AZ
+- Leader node manages communications between nodes
+- Compute node - perform queries of data
+- Redshift Enhanced VPC routing - VPC networking
+- Secure data
+  - Data is replicated to 1 additional node
+  - Automatic backup to s3 every 8-hour or 5-GB
+    - By default 1-day retention (configuration up to 35 days)
+  - Can create manual snapshot
+- Can copy data from DynamoDB
